@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catamount Chat - {{group_name}}</title>
+</head>
+
+<body>
+
+    <center>
+        <h1>{{group_name}}</h1>
+        <ul id="list_messages">
+        </ul>
+        <br>
+        <input type="text" id="input_message" placeholder="type message...">
+        <button id="button_upload_file">Send File</button>
+        <button id="button_send">Send</button>
+    </center>
+
+</body>
+
+<style>
+    #list_messages {
+        border: solid black thin;
+        width: 50vw;
+        height: 50vh;
+    }
+</style>
+
+<script>
+
+    const messagesList = document.getElementById('list_messages')
+    const sendButton = document.getElementById('button_send')
+    const messageInput = document.getElementById('input_message')
+    const uploadFileButton = document.getElementById('button_upload_file')
+
+    async function getMailbox() {
+        const response = await fetch('/api/download-mailbox',
+            {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: localStorage.username,
+                    auth_token: localStorage.auth_token,
+                })
+            }
+        )
+
+        const json = await response.json()
+        return json.messages
+    }
+
+    async function redrawList() {
+        const messages = JSON.parse(localStorage.getItem('messages') ?? '[]')
+        messagesList.innerHTML = ''
+        messages.sort((a, b) => a.date - b.date)
+        messages.forEach(e => {
+            const li = document.createElement('li')
+            if (e.text.startsWith('data:image')) {
+                li.innerHTML = `<div><image src=${e.text} height="100"> (${e.sender_id})</div>`
+            } else if (e.text.startsWith('data:')) {
+                li.innerHTML = `<div><a download="${Date.now()}" href=${e.text}>Download file</a>(${e.sender_id})</div>`
+            } else {
+                li.innerHTML = `<div>${e.text} (${e.sender_id})</div>`
+            }
+            messagesList.appendChild(li)
+        })
+    }
+
+    async function sendMessage(messageText) {
+        const message = {
+            group_id: localStorage.getItem('group_id'),
+            sender_id: localStorage.getItem('username'),
+            text: messageText,
+            date: Date.now(),
+        }
+
+        const response = await fetch('/api/upload-message',
+            {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    auth_token: localStorage.auth_token,
+                    message,
+                })
+            })
+
+        if (!response.ok) {
+            alert(await response.text())
+        }
+
+        return message
+    }
+
+    setInterval(() => {
+        getMailbox().then(newMessages => {
+            const oldMessages = JSON.parse(localStorage.getItem('messages') ?? '[]')
+            localStorage.setItem('messages', JSON.stringify([...oldMessages, ...newMessages]))
+            redrawList()
+        })
+    }, 1000)
+
+    sendButton.addEventListener('click', async e => {
+        const newMessage = await sendMessage(messageInput.value)
+        const oldMessages = JSON.parse(localStorage.getItem('messages') ?? '[]')
+        localStorage.setItem('messages', JSON.stringify([...oldMessages, newMessage]))
+        await redrawList()
+    })
+
+    uploadFileButton.addEventListener('click', async e => {
+        const text = await readBase64()
+        await sendMessage(text)
+    })
+
+    const readBase64 = () => {
+
+        return new Promise(function (resolve, reject) {
+
+            let span = document.createElement('span');
+            span.innerHTML = "<input id='fileInput' name='fileInput' type='file' hidden />".trim();
+
+            window.fileInput = span.getElementsByTagName("input")[0];
+
+            let fr = new FileReader();
+
+            fr.onload = () => {
+                resolve(fr.result);
+            };
+
+            window.fileInput.addEventListener("change", () => {
+                fr.readAsDataURL(window.fileInput.files[0])
+            });
+
+            window.fileInput.click();
+
+        })
+    }
+
+</script>
+
+</html>

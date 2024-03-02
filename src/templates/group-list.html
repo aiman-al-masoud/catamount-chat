@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catamount Chat - My Groups</title>
+</head>
+
+<body>
+    <center>
+        <h1>My Groups</h1>
+        <ul id="list_groups">
+
+        </ul>
+    </center>
+</body>
+
+<style>
+    #list_groups {
+        border: solid black thin;
+        width: 50vw;
+        height: 50vh;
+    }
+</style>
+
+<script>
+
+    (async () => {
+        const groupsList = document.getElementById('list_groups')
+        const response = await fetch(
+            '/api/get-groups',
+            {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: localStorage.username,
+                    auth_token: localStorage.auth_token,
+                })
+            }
+        )
+
+        const json = await response.json()
+
+        json.groups.forEach(g => {
+            const li = document.createElement('li')
+            li.innerHTML = g
+            li.id = g
+            li.onclick = () => {
+                location.href = `/chats/${g}`
+            }
+            localStorage.setItem('group_id', g)
+            groupsList.appendChild(li)
+        })
+
+    })()
+
+</script>
+
+</html>

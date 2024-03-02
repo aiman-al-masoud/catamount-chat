@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catamount Chat - Login</title>
+</head>
+
+<body>
+    <center>
+        <h1>Login</h1>
+        <input type="text" id="input_username" placeholder="username">
+        <br>
+        <input type="password" id="input_password" placeholder="password">
+        <br>
+        <button id="button_login">Login</button>
+        <br>
+        <p id="p_msg" hidden="hidden"></p>
+        <br>
+        <a href="/reset-password">Reset password</a>
+    </center>
+</body>
+
+<style>
+    input {
+        margin: 10px;
+        width: 30vw;
+    }
+
+    body {
+        font-size: larger;
+    }
+
+    #p_msg {
+        font-size: larger;
+        color: red;
+    }
+</style>
+
+<script>
+    const usernameInput = document.getElementById('input_username')
+    const passwordInput = document.getElementById('input_password')
+    const loginButton = document.getElementById('button_login')
+    const msgP = document.getElementById('p_msg')
+    usernameInput.value = localStorage.getItem('username')
+
+
+    loginButton.addEventListener('click', async e => {
+
+        const response = await fetch(
+            '/api/get-auth-token',
+            {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: usernameInput.value,
+                    password: passwordInput.value,
+                })
+            }
+        )
+
+        if (!response.ok) {
+            msgP.style.color = 'red'
+            msgP.innerHTML = await response.text()
+            msgP.hidden = false
+            return
+        }
+
+        const json = await response.json()
+        localStorage.setItem('username', usernameInput.value)
+        localStorage.setItem('auth_token', json.auth_token)
+        location.href = '/chats'
+    })
+
+</script>
+
+</html>
