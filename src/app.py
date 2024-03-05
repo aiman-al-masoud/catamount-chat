@@ -91,5 +91,5 @@ def get_groups():
     ).to_json()
 
 
-app.config['TEMPLATES_AUTO_RELOAD'] = True
-app.run()
+# app.config['TEMPLATES_AUTO_RELOAD'] = True
+# app.run()
